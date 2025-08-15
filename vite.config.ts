@@ -8,7 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     
-  ],base: '/weather/', //repo ko name 
+  ],
+  base: '/weather/', //repo ko name 
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

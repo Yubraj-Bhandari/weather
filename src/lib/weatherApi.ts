@@ -1,15 +1,7 @@
-//yesma chai helper functions haru cha jasle weather data fetch garxa from openweathermap
+// Helper functions to fetch weather data from OpenWeatherMap
+const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
-
- const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
-
-
-
-
-// const API_KEY='af9dc50369732b627c28f98ad9f15d60'
-
-// API bata aaune data ko structure
-//geographic coordinate data ko type, structure
+// Geographic coordinate data type structure
 export type Coords = {
   name: string;
   country: string;
@@ -17,19 +9,15 @@ export type Coords = {
   longitude: number;
 };
 
-//City name-> Coordinates convert hunxa
-//geocodeCity function ley ki ta coordinates dinxa ki null
+// Convert city name to coordinates
 export async function geocodeCity(name: string): Promise<Coords | null> {
-//if tyo name ko city xaina bhane null ra error throw garndine
+  if (!name.trim()) return null;
 
-    if (!name.trim()) return null;
-
-  const url = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(name)}&limit=1&appid=${API_KEY}`;
+  const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(name)}&limit=1&appid=${API_KEY}`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to search location');
 
-  //response aauxa coordinates
   const data = await res.json() as Array<{
     name: string;
     country: string;
@@ -37,7 +25,6 @@ export async function geocodeCity(name: string): Promise<Coords | null> {
     lon: number;
   }>;
 
-  //first data liney
   const first = data[0];
   return first ? {
     name: first.name,
@@ -47,9 +34,9 @@ export async function geocodeCity(name: string): Promise<Coords | null> {
   } : null;
 };
 
-// Function: Reverse geocode coordinates , get city from coordinates
+// Reverse geocode coordinates to get city
 export async function reverseGeocode(lat: number, lon: number): Promise<{name: string, country: string} | null> {
-  const url = `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`;
+  const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json() as Array<{
@@ -83,7 +70,7 @@ export type CurrentWeather = {
   name: string;
 };
 
-// Fetch current weather for given lat/lon using Current Weather API
+// Fetch current weather for given lat/lon
 export async function getCurrentWeather(lat: number, lon: number): Promise<CurrentWeather> {
   const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`;
 
@@ -93,7 +80,7 @@ export async function getCurrentWeather(lat: number, lon: number): Promise<Curre
   return await res.json() as CurrentWeather;
 };
 
-// Type for 5-Day/3-Hour Forecast data 
+// Type for 5-Day/3-Hour Forecast data
 export type ForecastWeather = {
   list: Array<{
     dt: number;
@@ -123,7 +110,7 @@ export type ForecastWeather = {
   };
 };
 
-// Fetch 5-day/3-hour forecast for given lat/lon 
+// Fetch 5-day/3-hour forecast for given lat/lon
 export async function getForecast(lat: number, lon: number): Promise<ForecastWeather> {
   const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`;
 
