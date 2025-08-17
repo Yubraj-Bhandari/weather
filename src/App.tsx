@@ -1,6 +1,6 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import { Search, Cloud, Sun, CloudRain, CloudFog, CloudLightning, Snowflake, Wind } from 'lucide-react';
+import { Search, Cloud, Sun, CloudRain, CloudFog, CloudLightning, Snowflake, Wind ,Loader} from 'lucide-react';
 
 
 // React Query hooks for data fetching and caching
@@ -69,6 +69,13 @@ function App() {
  //kun coordinates use garne ,userlocation bhaye tei natra entered city
   const effectiveCoords = useUserLocation ? userCoords : geocodeCoords;
 
+  // Detect case when geocoding finishes but returns no match
+  const geocodeNotFound =
+    !geocodeLoading &&
+    !useUserLocation &&
+    !geocodeError &&
+    geocodeCoords === null;
+
   //fetch current weather for chosen coordinates, different status hunxa, loading Error or data if success
   const {
     data: currentWeather,
@@ -109,20 +116,36 @@ function App() {
     }
   }
 
-  // If any error (location, current, or forecast), show error message 
-  let anyError = geocodeError || currentError || forecastError;
-  let errorMsg = '';
-  if (geocodeError) {
-    // For  error  , 
-    if ((geocodeErrObj as Error)?.message?.toLowerCase().includes('devtools')) {
-      errorMsg = ' ERROR.';
-    } else {
-      errorMsg = `Could not find location. ${(geocodeErrObj as Error)?.message}. Please try another city.`;
+  // Helper to classify and format error messages
+  function getErrorMessage(err: unknown, source: 'geocode' | 'current' | 'forecast') {
+    const msg = (err as Error)?.message || '';
+    const msgLower = msg.toLowerCase();
+
+    // Chrome devtools sometimes shows generic internal errors that include this keyword
+    if (msgLower.includes('devtools')) {
+      return 'Network error detected. Please check your internet connection or try again.';
     }
+
+    if (source === 'geocode') {
+      return `Could not find location. ${msg || 'Unknown error.'} Please try another city.`;
+    }
+    if (source === 'current') {
+      return `Unable to fetch weather data. ${msg || 'Unknown error.'}`;
+    }
+    // forecast
+    return `Unable to fetch forecast data. ${msg || 'Unknown error.'}`;
+  }
+
+  const anyError = geocodeError || currentError || forecastError || geocodeNotFound;
+  let errorMsg = "";
+  if (geocodeError) {
+    errorMsg = getErrorMessage(geocodeErrObj, "geocode");
+  } else if (geocodeNotFound) {
+    errorMsg = "Could not find location. Please try another city.";
   } else if (currentError) {
-    errorMsg = `Unable to fetch weather data. ${(currentErrObj as Error)?.message}`;
+    errorMsg = getErrorMessage(currentErrObj, "current");
   } else if (forecastError) {
-    errorMsg = `Unable to fetch forecast data. ${(forecastErrObj as Error)?.message}`;
+    errorMsg = getErrorMessage(forecastErrObj, "forecast");
   }
 
   // Main render
@@ -135,8 +158,11 @@ function App() {
           {anyError ? (
             <div className="error-message">{errorMsg}</div>
           ) : (geocodeLoading || currentLoading || forecastLoading) ? (
-            // Show only loading if any loading state is true
-            <p className="weather-sub">Loading...</p>
+            // loading icon
+            <div className="flex justify-center py-4">
+             <Loader className="animate-spin h-8 w-8 text-blue-600" />
+             <p>Loading</p>
+            </div>
           ) : showForecast ? (
             // 5-day forecast page
             <>
@@ -194,7 +220,7 @@ function CurrentWeather({ currentWeather }: { currentWeather: CurrentWeather }) 
   const maxF = Math.round(((currentWeather.main.temp_max * 9/5) + 32) * 100) / 100;
 
   const currentDate = new Date(currentWeather.dt * 1000);
-  const timeStr = currentDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+  const timeStr = currentDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', hour12: true });
   const dateStr = currentDate.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric' });
 
   const pressure = Math.round(currentWeather.main.pressure);
